@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Weather App</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+      color: #fff;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 420px;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.8rem;
+      margin-bottom: 24px;
+      letter-spacing: 1px;
+      color: #e0e0ff;
+    }
+
+    .search-box {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    input {
+      flex: 1;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.15);
+      transition: border 0.2s;
+    }
+
+    input::placeholder { color: rgba(255,255,255,0.5); }
+    input:focus { border-color: rgba(255,255,255,0.4); }
+
+    button {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 12px;
+      background: #4f8ef7;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    button:hover { background: #3a7de8; }
+    button:active { transform: scale(0.97); }
+
+    .card {
+      background: rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 30px;
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.12);
+      display: none;
+      animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .location {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .location h2 { font-size: 1.6rem; }
+    .location span { font-size: 0.9rem; color: rgba(255,255,255,0.6); }
+
+    .weather-icon {
+      text-align: center;
+      font-size: 5rem;
+      margin: 10px 0;
+    }
+
+    .temp {
+      text-align: center;
+      font-size: 3.5rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .description {
+      text-align: center;
+      font-size: 1rem;
+      color: rgba(255,255,255,0.65);
+      margin-bottom: 24px;
+      text-transform: capitalize;
+    }
+
+    .details {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    .detail-item {
+      background: rgba(255,255,255,0.07);
+      border-radius: 12px;
+      padding: 14px 10px;
+      text-align: center;
+    }
+
+    .detail-item .label {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .detail-item .value {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .error {
+      text-align: center;
+      color: #ff6b6b;
+      background: rgba(255,107,107,0.1);
+      border-radius: 12px;
+      padding: 14px;
+      display: none;
+    }
+
+    .loader {
+      text-align: center;
+      color: rgba(255,255,255,0.6);
+      display: none;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌤 Weather App</h1>
+
+    <div class="search-box">
+      <input type="text" id="cityInput" placeholder="Enter city name..." />
+      <button onclick="getWeather()">Search</button>
+    </div>
+
+    <div class="loader" id="loader">Fetching weather...</div>
+    <div class="error" id="error"></div>
+
+    <div class="card" id="weatherCard">
+      <div class="location">
+        <h2 id="cityName"></h2>
+        <span id="countryName"></span>
+      </div>
+      <div class="weather-icon" id="weatherIcon"></div>
+      <div class="temp" id="temperature"></div>
+      <div class="description" id="description"></div>
+      <div class="details">
+        <div class="detail-item">
+          <div class="label">Feels Like</div>
+          <div class="value" id="feelsLike"></div>
+        </div>
+        <div class="detail-item">
+          <div class="label">Humidity</div>
+          <div class="value" id="humidity"></div>
+        </div>
+        <div class="detail-item">
+          <div class="label">Wind</div>
+          <div class="value" id="wind"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const weatherInfo = {
+      0:  { desc: 'Clear Sky',          icon: '☀️' },
+      1:  { desc: 'Mainly Clear',       icon: '🌤' },
+      2:  { desc: 'Partly Cloudy',      icon: '⛅' },
+      3:  { desc: 'Overcast',           icon: '☁️' },
+      45: { desc: 'Foggy',              icon: '🌫' },
+      48: { desc: 'Icy Fog',            icon: '🌫' },
+      51: { desc: 'Light Drizzle',      icon: '🌦' },
+      53: { desc: 'Drizzle',            icon: '🌦' },
+      55: { desc: 'Heavy Drizzle',      icon: '🌧' },
+      61: { desc: 'Light Rain',         icon: '🌧' },
+      63: { desc: 'Rain',               icon: '🌧' },
+      65: { desc: 'Heavy Rain',         icon: '🌧' },
+      71: { desc: 'Light Snow',         icon: '🌨' },
+      73: { desc: 'Snow',               icon: '❄️' },
+      75: { desc: 'Heavy Snow',         icon: '❄️' },
+      80: { desc: 'Rain Showers',       icon: '🌦' },
+      81: { desc: 'Rain Showers',       icon: '🌧' },
+      82: { desc: 'Violent Showers',    icon: '⛈' },
+      95: { desc: 'Thunderstorm',       icon: '⛈' },
+      99: { desc: 'Thunderstorm + Hail',icon: '⛈' },
+    };
+
+    document.getElementById('cityInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') getWeather();
+    });
+
+    async function getWeather() {
+      const city = document.getElementById('cityInput').value.trim();
+      if (!city) return;
+
+      const card = document.getElementById('weatherCard');
+      const error = document.getElementById('error');
+      const loader = document.getElementById('loader');
+
+      card.style.display = 'none';
+      error.style.display = 'none';
+      loader.style.display = 'block';
+
+      try {
+        const res = await fetch(`/weather?city=${encodeURIComponent(city)}`);
+        const data = await res.json();
+        loader.style.display = 'none';
+
+        if (!res.ok) {
+          error.textContent = data.error || 'Something went wrong.';
+          error.style.display = 'block';
+          return;
+        }
+
+        const info = weatherInfo[data.weather_code] || { desc: 'Unknown', icon: '🌡' };
+
+        document.getElementById('cityName').textContent = data.city;
+        document.getElementById('countryName').textContent = data.country;
+        document.getElementById('weatherIcon').textContent = info.icon;
+        document.getElementById('temperature').textContent = `${Math.round(data.temperature)}°C`;
+        document.getElementById('description').textContent = info.desc;
+        document.getElementById('feelsLike').textContent = `${Math.round(data.feels_like)}°C`;
+        document.getElementById('humidity').textContent = `${data.humidity}%`;
+        document.getElementById('wind').textContent = `${Math.round(data.wind_speed)} mph`;
+
+        card.style.display = 'block';
+      } catch {
+        loader.style.display = 'none';
+        error.textContent = 'Network error. Please try again.';
+        error.style.display = 'block';
+      }
+    }
+  </script>
+</body>
+</html>
