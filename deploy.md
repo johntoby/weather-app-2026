@@ -15,6 +15,8 @@
    - `80` — HTTP
    - `443` — HTTPS
 
+   Later go back to your security group and open port 3000. 
+
 ---
 
 ## 2. Point Your Domain to EC2
@@ -71,7 +73,7 @@ npm install --omit=dev
 This keeps the app running and auto-restarts it on crash or reboot.
 
 ```bash
-sudo nano /etc/systemd/system/weather-app.service
+sudo vim /etc/systemd/system/weather-app.service
 ```
 
 Paste the following (replace `ubuntu` with your actual username if different):
@@ -109,7 +111,7 @@ sudo systemctl status weather-app
 ## 7. Configure Nginx as a Reverse Proxy
 
 ```bash
-sudo nano /etc/nginx/sites-available/weather-app
+sudo vim /etc/nginx/sites-available/weather-app
 ```
 
 Paste the following (replace `yourdomain.com` with your actual domain):
@@ -117,7 +119,7 @@ Paste the following (replace `yourdomain.com` with your actual domain):
 ```nginx
 server {
     listen 80;
-    server_name yourdomain.com www.yourdomain.com;
+    server_name weather-app.borderlesstechacademy.com;
 
     location / {
         proxy_pass http://localhost:3000;
@@ -142,8 +144,9 @@ sudo systemctl reload nginx
 
 ## 8. Enable HTTPS with Let's Encrypt
 
+
 ```bash
-sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+sudo certbot --nginx -d www.weather-app.borderlesstechacademy.com 
 ```
 
 Certbot will automatically update your Nginx config with SSL. Certificates auto-renew via a cron job installed by Certbot.
